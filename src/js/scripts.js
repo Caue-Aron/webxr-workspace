@@ -1,109 +1,280 @@
 import * as THREE from 'three'
-import { VRButton } from 'three/examples/jsm/webxr/VRButton.js'
-import * as dat from 'dat.gui'
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+import { OBJLoader } from 'three/examples/jsm/Addons.js';
 
-// Renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true })
-renderer.setSize(window.innerWidth, window.innerHeight)
-renderer.shadowMap.enabled = true
-renderer.xr.enabled = true
-document.body.appendChild(renderer.domElement)
-document.body.appendChild(VRButton.createButton(renderer))
+import bucketPng from 'url:./../assets/bucket.png';
+import bucketModel from 'url:./../assets/bucket.obj';
 
-// Scene
-const scene = new THREE.Scene()
+import skyscrapperPng from 'url:./../assets/skyscrapper.png';
+import skyscrapperModel from 'url:./../assets/skyscrapper.obj';
 
-// Camera (WebXR will override its transform in VR)
-const camera = new THREE.PerspectiveCamera(
-  75,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  1000
-)
+import wheelPng from 'url:./../assets/rope.png';
+import wheelModel from 'url:./../assets/wheel.obj';
 
-const cameraRig = new THREE.Group()
-cameraRig.position.set(-3, 5, 15)
-cameraRig.add(camera)
-scene.add(cameraRig)
+import planksPng from 'url:./../assets/planks.png';
+import planksModel from 'url:./../assets/planks.obj';
 
-// Helpers
-scene.add(new THREE.AxesHelper(5))
-scene.add(new THREE.GridHelper(30))
+let lookingLeft = false;
+let lookingRight = false;
 
-// Box
-const box = new THREE.Mesh(
-  new THREE.BoxGeometry(),
-  new THREE.MeshStandardMaterial({ color: 0xff0000 })
-)
-box.position.y = 1
-box.castShadow = true
-scene.add(box)
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-// Plane (floor)
-const plane = new THREE.Mesh(
-  new THREE.PlaneGeometry(30, 30),
-  new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    side: THREE.DoubleSide
-  })
-)
-plane.rotation.x = -Math.PI / 2
-plane.receiveShadow = true
-scene.add(plane)
+const bkgColor = 0xD0E8F8;
+renderer.setClearColor(bkgColor);
 
-// Sphere
-const sphere = new THREE.Mesh(
-  new THREE.SphereGeometry(4),
-  new THREE.MeshStandardMaterial({ color: 0x0000ff })
-)
-sphere.position.set(-10, 10, 0)
-sphere.castShadow = true
-scene.add(sphere)
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(bkgColor, 0, 12);
 
-// Lights
-scene.add(new THREE.AmbientLight(0x333333))
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const controls = new PointerLockControls(camera, document.body);
+camera.position.set(0, 2, 3);
 
-const spotLight = new THREE.SpotLight(0xffffff, 1)
-spotLight.position.set(-100, 100, 0)
-spotLight.angle = 0.2
-spotLight.decay = 0
-spotLight.castShadow = true
-scene.add(spotLight)
+const objLoader = new OBJLoader();
+const textureLoader = new THREE.TextureLoader();
 
-// GUI (works on desktop, not inside headset)
-const gui = new dat.GUI()
-const options = {
-  sphereColor: '#ffea00',
-  wireframe: false,
-  speed: 0.01
+function loadModelWithTexture(model, png, onLoad = null) {
+	const texture = textureLoader.load(png);
+	texture.wrapS = THREE.RepeatWrapping;
+	texture.wrapT = THREE.RepeatWrapping;
+	objLoader.load(
+		model, (obj) => {
+			obj.traverse(function(child) {
+				if (child instanceof THREE.Mesh) {
+					child.material = new THREE.MeshBasicMaterial({map: texture});
+				}
+			})
+			if (typeof onLoad == 'function') {
+				onLoad(obj);
+			}
+		},
+		function( xhr ){
+			console.log( (xhr.loaded / xhr.total * 100) + "% loaded")
+		},
+		function( err ){
+			console.error( "Error loading 'ship.obj'")
+		}
+	)
 }
 
-gui.addColor(options, 'sphereColor').onChange(v => {
-  sphere.material.color.set(v)
-})
+const glowColor = 0xc6ff72;
+const glowIntensity = 1.1
 
-gui.add(options, 'wireframe').onChange(v => {
-  sphere.material.wireframe = v
-})
+const normalColor = 0xFFFFFF;
+const normalIntensity = 0.8
+function loadModelWithTexturePretty(model, png, onLoad = null) {
+	const texture = textureLoader.load(png);
+	texture.wrapS = THREE.RepeatWrapping;
+	texture.wrapT = THREE.RepeatWrapping;
+	objLoader.load(
+		model, (obj) => {
+			obj.traverse(function(child) {
+				if (child instanceof THREE.Mesh) {
+					child.material = new THREE.MeshStandardMaterial({
+						map: texture,
 
-gui.add(options, 'speed', 0, 0.1)
+						emissive: new THREE.Color(normalColor),
+						emissiveIntensity: normalIntensity,
 
-// Animation
-let step = 0
+						emissiveMap: texture,
+						roughness: 0.6,
+						metalness: 0.0,
+					});
+				}
+			})
+			if (typeof onLoad == 'function') {
+				onLoad(obj);
+			}
+		},
+		function( xhr ){
+			console.log( (xhr.loaded / xhr.total * 100) + "% loaded")
+		},
+		function( err ){
+			console.error( "Error loading 'ship.obj'")
+		}
+	)
+}
 
-renderer.setAnimationLoop((time) => {
-  box.rotation.x = time / 1000
-  box.rotation.y = time / 1000
+function spawnPrototype(prototype) {
+	const obj = prototype.clone(true);
+	obj.position.set(0, 0, 0);
+	scene.add(obj);
+	return obj;
+}
 
-  step += options.speed
-  sphere.position.y = 10 * Math.abs(Math.sin(step))
+function createInvisibleBlock(position, onHit) {
+	const geometry = new THREE.PlaneGeometry(4.5, 30);
+	const material = new THREE.MeshBasicMaterial();
 
-  renderer.render(scene, camera)
-})
+	const mesh = new THREE.Mesh(geometry, material);
+	mesh.position.copy(position);
+	mesh.visible = false;
 
-// Resize
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight
-  camera.updateProjectionMatrix()
-  renderer.setSize(window.innerWidth, window.innerHeight)
-})
+	mesh.userData.onHit = onHit;
+
+	scene.add(mesh);
+	return mesh;
+}
+
+
+function getFirstMaterial(root) {
+  if (!root) return null;
+
+  let found = null;
+
+  root.traverse(child => {
+    if (found) return;
+    if (child.isMesh && child.material) {
+      found = child.material;
+    }
+  });
+
+  return found;
+}
+
+let bucket = null;
+loadModelWithTexture(bucketModel, bucketPng, (obj) => {
+	scene.add(obj);
+	bucket = obj;
+	
+	obj.position.z = 3;
+	obj.position.y = -0.1;
+});
+
+let skyScrapper = null;
+loadModelWithTexture(skyscrapperModel, skyscrapperPng, (obj) => {
+	scene.add(obj);
+	skyScrapper = obj;
+
+	obj.rotation.y = (Math.PI / 2) * 3;
+});
+
+let planks = null;
+loadModelWithTexture(planksModel, planksPng, (obj) => {
+	scene.add(obj);
+	planks = obj;
+	obj.rotation.y = (Math.PI / 2);
+	
+	obj.position.z = 3;
+});
+
+const DISTANCE = 4.1
+
+let leftWheel = null;
+let rightWheel = null;
+loadModelWithTexturePretty(wheelModel, wheelPng, (obj) => {
+	leftWheel = spawnPrototype(obj);
+	leftWheel.position.set(-DISTANCE, 0, 3);
+	
+	rightWheel = spawnPrototype(obj);
+	rightWheel.position.set(DISTANCE, 0, 3);
+	rightWheel.rotation.y = THREE.MathUtils.degToRad(180);
+});
+
+const leftBlock = createInvisibleBlock(new THREE.Vector3(-DISTANCE, 0, 3), () => {
+	lookingLeft = true;
+});
+leftBlock.rotation.y = THREE.MathUtils.degToRad(90);
+
+const rightBlock = createInvisibleBlock(new THREE.Vector3(DISTANCE, 0, 3), () => {
+	lookingRight = true;
+});
+rightBlock.rotation.y = THREE.MathUtils.degToRad(-90);
+
+const raycaster = new THREE.Raycaster();
+const forward = new THREE.Vector3();
+function updateRaycast() {
+	lookingLeft = false;
+	lookingRight = false;
+	camera.getWorldDirection(forward);
+	raycaster.set(camera.position, forward);
+
+	const hits = raycaster.intersectObjects(scene.children, false);
+
+	if (hits.length > 0) {
+		const hit = hits[0].object;
+		if (hit.userData.onHit) {
+			hit.userData.onHit();
+		}
+	}
+}
+document.addEventListener('click', () => {
+	controls.lock();
+});
+
+
+let mouseLDown = false;
+let mouseRDown = false;
+document.addEventListener('mousedown', (e) => {
+	if (e.button === 0)
+		mouseLDown = true;
+
+	if (e.button === 2)
+		mouseRDown = true;
+});
+
+document.addEventListener('mouseup', (e) => {
+	if (e.button === 0)
+		mouseLDown = false;
+
+	if (e.button === 2)
+		mouseRDown = false;
+});
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+const clock = new THREE.Clock();
+const ROTATION_SPEED = THREE.MathUtils.degToRad(5);
+function handleAndaimeRotation() {
+	let andaimeRotation = 0;
+	const dt = clock.getDelta();
+
+	let leftMaterial = null;
+	let rightMaterial = null;
+
+	if (leftWheel) leftMaterial = getFirstMaterial(leftWheel);
+	if (rightWheel) rightMaterial = getFirstMaterial(rightWheel);
+
+	if (leftMaterial) {
+		leftMaterial.emissiveIntensity = normalIntensity;
+		leftMaterial.emissive = new THREE.Color(normalColor);
+	}
+
+	if (rightMaterial) {
+		rightMaterial.emissiveIntensity = normalIntensity;
+		rightMaterial.emissive = new THREE.Color(normalColor);
+	}
+	
+	if (lookingLeft) {
+		if (leftWheel) {
+			leftMaterial.emissiveIntensity = glowIntensity;
+			leftMaterial.emissive = new THREE.Color(glowColor);
+		}
+
+		if (mouseLDown) 
+			andaimeRotation += ROTATION_SPEED * dt;
+
+		else if (mouseRDown)
+			andaimeRotation -= ROTATION_SPEED * dt;
+	}
+	else if (lookingRight) {
+		if (rightWheel) {
+			rightMaterial.emissiveIntensity = glowIntensity;
+			rightMaterial.emissive = new THREE.Color(glowColor);
+		}
+	}
+
+	if (planks) {
+		const WORLD_Z = new THREE.Vector3(0, 0, 1);
+		planks.rotateOnWorldAxis(WORLD_Z, andaimeRotation);
+	}
+}
+
+function animate(time) {
+	requestAnimationFrame(animate);
+
+	updateRaycast();
+	handleAndaimeRotation()
+	renderer.render(scene, camera);
+}
+animate();
