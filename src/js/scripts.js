@@ -133,15 +133,6 @@ function getFirstMaterial(root) {
   return found;
 }
 
-let bucket = null;
-loadModelWithTexture(bucketModel, bucketPng, (obj) => {
-	scene.add(obj);
-	bucket = obj;
-	
-	obj.position.z = 3;
-	obj.position.y = -0.1;
-});
-
 let skyScrapper = null;
 loadModelWithTexture(skyscrapperModel, skyscrapperPng, (obj) => {
 	scene.add(obj);
@@ -150,9 +141,18 @@ loadModelWithTexture(skyscrapperModel, skyscrapperPng, (obj) => {
 	obj.rotation.y = (Math.PI / 2) * 3;
 });
 
+let bucket = null;
+loadModelWithTexture(bucketModel, bucketPng, (obj) => {
+	bucket = obj;
+});
+
 let planks = null;
 loadModelWithTexture(planksModel, planksPng, (obj) => {
 	scene.add(obj);
+
+	obj.add(bucket);
+	bucket.position.y = 0.2
+
 	planks = obj;
 	obj.rotation.y = (Math.PI / 2);
 	
@@ -224,7 +224,7 @@ document.addEventListener('mouseup', (e) => {
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 const clock = new THREE.Clock();
-const ROTATION_SPEED = THREE.MathUtils.degToRad(5);
+const ROTATION_SPEED = THREE.MathUtils.degToRad(10);
 function handleAndaimeRotation() {
 	let andaimeRotation = 0;
 	const dt = clock.getDelta();
@@ -262,11 +262,24 @@ function handleAndaimeRotation() {
 			rightMaterial.emissiveIntensity = glowIntensity;
 			rightMaterial.emissive = new THREE.Color(glowColor);
 		}
+
+		if (mouseLDown) 
+			andaimeRotation -= ROTATION_SPEED * dt;
+
+		else if (mouseRDown)
+			andaimeRotation += ROTATION_SPEED * dt;
 	}
 
-	if (planks) {
+	if (planks && leftWheel && rightWheel && bucket) {
 		const WORLD_Z = new THREE.Vector3(0, 0, 1);
 		planks.rotateOnWorldAxis(WORLD_Z, andaimeRotation);
+
+		const wheelFactor = 4;
+		leftWheel.position.y -= andaimeRotation * wheelFactor;
+		rightWheel.position.y += andaimeRotation * wheelFactor;
+
+		const SLIDE_FACTOR = 8
+		bucket.position.z -= andaimeRotation * SLIDE_FACTOR;
 	}
 }
 
