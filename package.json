@@ -7,7 +7,14 @@
     "parcel": "^2.16.3"
   },
   "dependencies": {
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/hands": "^0.4.1675469240",
     "dat.gui": "^0.7.9",
+    "mediapipe": "^0.0.1-security",
     "three": "^0.182.0"
+  },
+  "scripts": {
+    "dev": "parcel src/index.html",
+    "build": "parcel build src/index.html --dist-dir docs --public-url ./"
   }
 }

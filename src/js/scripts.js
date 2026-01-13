@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import { OBJLoader } from 'three/examples/jsm/Addons.js';
+import { Hands } from '@mediapipe/hands';
+import { Camera } from '@mediapipe/camera_utils';
 
 import bucketPng from 'url:./../assets/bucket.png';
 import bucketModel from 'url:./../assets/bucket.obj';
@@ -17,6 +19,8 @@ import planksModel from 'url:./../assets/planks.obj';
 let lookingLeft = false;
 let lookingRight = false;
 
+let handVisible = false;
+
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
@@ -27,9 +31,59 @@ renderer.setClearColor(bkgColor);
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(bkgColor, 0, 12);
 
+const video = document.createElement('video');
+video.setAttribute('playsinline', '');
+video.muted = true;
+video.autoplay = true;
+
+// --- debug view styling ---
+video.style.position = 'fixed';
+video.style.right = '10px';
+video.style.bottom = '10px';
+video.style.width = '160px';
+video.style.height = '120px';
+video.style.border = '2px solid #0f0';
+video.style.borderRadius = '6px';
+video.style.background = '#000';
+video.style.zIndex = '9998';
+video.style.opacity = '0.9';
+
+document.body.appendChild(video);
+
+const hands = new Hands({
+	locateFile: file =>
+		`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+});
+
+hands.setOptions({
+	maxNumHands: 1,
+	modelComplexity: 0,
+	minDetectionConfidence: 0.7,
+	minTrackingConfidence: 0.5
+});
+
+hands.onResults(results => {
+	handVisible = !!(
+		results.multiHandLandmarks &&
+		results.multiHandLandmarks.length > 0
+	);
+});
+
+const cameraFeed = new Camera(video, {
+	onFrame: async () => {
+		await hands.send({ image: video });
+	},
+	width: 640,
+	height: 480,
+	facingMode: 'environment'
+});
+
+cameraFeed.start();
+
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const controls = new PointerLockControls(camera, document.body);
 camera.position.set(0, 2, 3);
+camera.rotation.y = THREE.MathUtils.degToRad(90);
 
 const objLoader = new OBJLoader();
 const textureLoader = new THREE.TextureLoader();
@@ -226,6 +280,7 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 const clock = new THREE.Clock();
 const ROTATION_SPEED = THREE.MathUtils.degToRad(10);
 function handleAndaimeRotation() {
+	const handActsAsMouse = handVisible;
 	let andaimeRotation = 0;
 	const dt = clock.getDelta();
 
@@ -251,7 +306,7 @@ function handleAndaimeRotation() {
 			leftMaterial.emissive = new THREE.Color(glowColor);
 		}
 
-		if (mouseLDown) 
+		if (mouseLDown || handActsAsMouse) 
 			andaimeRotation += ROTATION_SPEED * dt;
 
 		else if (mouseRDown)
@@ -263,7 +318,7 @@ function handleAndaimeRotation() {
 			rightMaterial.emissive = new THREE.Color(glowColor);
 		}
 
-		if (mouseLDown) 
+		if (mouseLDown || handActsAsMouse) 
 			andaimeRotation -= ROTATION_SPEED * dt;
 
 		else if (mouseRDown)
