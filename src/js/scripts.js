@@ -109,13 +109,14 @@ hands.setOptions({
 	minTrackingConfidence: 0.5
 });
 
-<<<<<<< HEAD
-hands.onResults(results => {
+
+hands.onResults((results) => {
 	handVisible = !!(
 		results.multiHandLandmarks &&
 		results.multiHandLandmarks.length > 0
 	);
-=======
+});
+
 hands.onResults((results) => {
 	if (!results.multiHandLandmarks.length) return;
 
@@ -134,7 +135,6 @@ hands.onResults((results) => {
 		thumbs_down = false;
 		thumbs_up = false;
 	}
->>>>>>> 82d9250 (new test)
 });
 
 const cameraFeed = new Camera(video, {
