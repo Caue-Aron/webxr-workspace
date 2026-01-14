@@ -63,34 +63,19 @@ function distance(a, b) {
 function detectThumbGestureLandscape(landmarks) {
 	const wrist = landmarks[0];
 	const thumbTip = landmarks[4];
-	const thumbMCP = landmarks[2];
 
-	const indexTip = landmarks[8];
-	const middleTip = landmarks[12];
-	const ringTip = landmarks[16];
-	const pinkyTip = landmarks[20];
+	const dx = Math.abs(thumbTip.x - wrist.x);
+	const dy = wrist.y - thumbTip.y; // up is positive
 
-	// 1. Polegar estendido
-	const thumbExtended =
-		distance(thumbTip, thumbMCP) > 0.05;
+	const deadZone = 0.015;
 
-	// 2. Outros dedos recolhidos
-	const fingersFolded =
-		distance(indexTip, wrist) < 0.1 &&
-		distance(middleTip, wrist) < 0.1 &&
-		distance(ringTip, wrist) < 0.1 &&
-		distance(pinkyTip, wrist) < 0.1;
-
-	if (!thumbExtended || !fingersFolded) {
-		return "none";
-	}
-
-	// 3. Direção em landscape (eixo X)
-	if (thumbTip.x > wrist.x) {
+	if (dy >= deadZone && dy >= dx * 0.6) {
+		console.log("thumbs_up");
 		return "thumbs_up";
 	}
 
-	if (thumbTip.x < wrist.x) {
+	if (-dy >= deadZone && -dy >= dx * 0.6) {
+		console.log("thumbs_down");
 		return "thumbs_down";
 	}
 
@@ -108,7 +93,6 @@ hands.setOptions({
 	minDetectionConfidence: 0.7,
 	minTrackingConfidence: 0.5
 });
-
 
 hands.onResults((results) => {
 	handVisible = !!(
@@ -170,12 +154,6 @@ function loadModelWithTexture(model, png, onLoad = null) {
 			if (typeof onLoad == 'function') {
 				onLoad(obj);
 			}
-		},
-		function( xhr ){
-			console.log( (xhr.loaded / xhr.total * 100) + "% loaded")
-		},
-		function( err ){
-			console.error( "Error loading 'ship.obj'")
 		}
 	)
 }
@@ -348,7 +326,6 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 const clock = new THREE.Clock();
 const ROTATION_SPEED = THREE.MathUtils.degToRad(10);
 function handleAndaimeRotation() {
-	const handActsAsMouse = handVisible;
 	let andaimeRotation = 0;
 	const dt = clock.getDelta();
 
@@ -374,10 +351,10 @@ function handleAndaimeRotation() {
 			leftMaterial.emissive = new THREE.Color(glowColor);
 		}
 
-		if (mouseLDown || handActsAsMouse) 
+		if (mouseLDown || thumbs_down) 
 			andaimeRotation += ROTATION_SPEED * dt;
 
-		else if (mouseRDown)
+		else if (mouseRDown || thumbs_up)
 			andaimeRotation -= ROTATION_SPEED * dt;
 	}
 	else if (lookingRight) {
@@ -386,10 +363,10 @@ function handleAndaimeRotation() {
 			rightMaterial.emissive = new THREE.Color(glowColor);
 		}
 
-		if (mouseLDown || handActsAsMouse) 
+		if (mouseLDown || thumbs_down) 
 			andaimeRotation -= ROTATION_SPEED * dt;
 
-		else if (mouseRDown)
+		else if (mouseRDown || thumbs_up)
 			andaimeRotation += ROTATION_SPEED * dt;
 	}
 
@@ -404,6 +381,8 @@ function handleAndaimeRotation() {
 		const SLIDE_FACTOR = 8
 		bucket.position.z -= andaimeRotation * SLIDE_FACTOR;
 	}
+	thumbs_down = false;
+	thumbs_up = false;
 }
 
 function animate(time) {
