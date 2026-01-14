@@ -7,6 +7,9 @@
     "@mediapipe/hands": "^0.4.1675466862",
     "@mediapipe/camera_utils": "^0.3.1675466862"
   },
+  "scripts": {
+    "build": "parcel build index.html --public-url ./"
+  },
   "devDependencies": {
     "parcel": "^2.12.0"
   }
