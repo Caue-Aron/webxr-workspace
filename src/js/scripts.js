@@ -16,14 +16,17 @@ import wheelModel from 'url:./../assets/wheel.obj';
 import planksPng from 'url:./../assets/planks.png';
 import planksModel from 'url:./../assets/planks.obj';
 
+import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
+
 let lookingLeft = false;
 let lookingRight = false;
 
 let handVisible = false;
 
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+renderer.xr.enabled = true;
+document.body.appendChild(VRButton.createButton(renderer));
 
 const bkgColor = 0xD0E8F8;
 renderer.setClearColor(bkgColor);
@@ -133,9 +136,7 @@ const cameraFeed = new Camera(video, {
 cameraFeed.start();
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const controls = new PointerLockControls(camera, document.body);
-camera.position.set(0, 2, 3);
-camera.rotation.y = THREE.MathUtils.degToRad(90);
+scene.position.set(0, -1.6, -3.5);
 
 const objLoader = new OBJLoader();
 const textureLoader = new THREE.TextureLoader();
@@ -284,13 +285,21 @@ rightBlock.rotation.y = THREE.MathUtils.degToRad(-90);
 
 const raycaster = new THREE.Raycaster();
 const forward = new THREE.Vector3();
+
 function updateRaycast() {
 	lookingLeft = false;
 	lookingRight = false;
-	camera.getWorldDirection(forward);
-	raycaster.set(camera.position, forward);
 
-	const hits = raycaster.intersectObjects(scene.children, false);
+	// XR-safe camera direction
+	camera.getWorldDirection(forward);
+
+	// XR-safe camera position
+	const origin = new THREE.Vector3();
+	camera.getWorldPosition(origin);
+
+	raycaster.set(origin, forward);
+
+	const hits = raycaster.intersectObjects(scene.children, true);
 
 	if (hits.length > 0) {
 		const hit = hits[0].object;
@@ -299,6 +308,7 @@ function updateRaycast() {
 		}
 	}
 }
+
 document.addEventListener('click', () => {
 	controls.lock();
 });
@@ -385,11 +395,8 @@ function handleAndaimeRotation() {
 	thumbs_up = false;
 }
 
-function animate(time) {
-	requestAnimationFrame(animate);
-
+renderer.setAnimationLoop(() => {
 	updateRaycast();
-	handleAndaimeRotation()
+	handleAndaimeRotation();
 	renderer.render(scene, camera);
-}
-animate();
+});

@@ -736,12 +736,16 @@ var _planksPng = require("url:./../assets/planks.png");
 var _planksPngDefault = parcelHelpers.interopDefault(_planksPng);
 var _planksObj = require("url:./../assets/planks.obj");
 var _planksObjDefault = parcelHelpers.interopDefault(_planksObj);
+var _vrbuttonJs = require("three/examples/jsm/webxr/VRButton.js");
 let lookingLeft = false;
 let lookingRight = false;
 let handVisible = false;
-const renderer = new _three.WebGLRenderer();
+const renderer = new _three.WebGLRenderer({
+    antialias: true
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+renderer.xr.enabled = true;
+document.body.appendChild((0, _vrbuttonJs.VRButton).createButton(renderer));
 const bkgColor = 0xD0E8F8;
 renderer.setClearColor(bkgColor);
 const scene = new _three.Scene();
@@ -825,9 +829,7 @@ const cameraFeed = new (0, _cameraUtils.Camera)(video, {
 });
 cameraFeed.start();
 const camera = new _three.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const controls = new (0, _pointerLockControlsJs.PointerLockControls)(camera, document.body);
-camera.position.set(0, 2, 3);
-camera.rotation.y = _three.MathUtils.degToRad(90);
+scene.position.set(0, -1.6, -3.5);
 const objLoader = new (0, _addonsJs.OBJLoader)();
 const textureLoader = new _three.TextureLoader();
 function loadModelWithTexture(model, png, onLoad = null) {
@@ -936,9 +938,13 @@ const forward = new _three.Vector3();
 function updateRaycast() {
     lookingLeft = false;
     lookingRight = false;
+    // XR-safe camera direction
     camera.getWorldDirection(forward);
-    raycaster.set(camera.position, forward);
-    const hits = raycaster.intersectObjects(scene.children, false);
+    // XR-safe camera position
+    const origin = new _three.Vector3();
+    camera.getWorldPosition(origin);
+    raycaster.set(origin, forward);
+    const hits = raycaster.intersectObjects(scene.children, true);
     if (hits.length > 0) {
         const hit = hits[0].object;
         if (hit.userData.onHit) hit.userData.onHit();
@@ -1002,15 +1008,13 @@ function handleAndaimeRotation() {
     thumbs_down = false;
     thumbs_up = false;
 }
-function animate(time) {
-    requestAnimationFrame(animate);
+renderer.setAnimationLoop(()=>{
     updateRaycast();
     handleAndaimeRotation();
     renderer.render(scene, camera);
-}
-animate();
+});
 
-},{"three":"dsoTF","three/examples/jsm/Addons.js":"1rzY8","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","three/examples/jsm/controls/PointerLockControls.js":"iJuTM","url:./../assets/bucket.png":"i5DLN","url:./../assets/bucket.obj":"iEFFP","url:./../assets/skyscrapper.png":"359Mx","url:./../assets/skyscrapper.obj":"aqtml","url:./../assets/rope.png":"aR3Rp","url:./../assets/wheel.obj":"1tDJU","url:./../assets/planks.png":"loBs6","url:./../assets/planks.obj":"6EYq0","@mediapipe/hands":"lwRQS","@mediapipe/camera_utils":"dKcPV"}],"dsoTF":[function(require,module,exports,__globalThis) {
+},{"three":"dsoTF","three/examples/jsm/Addons.js":"1rzY8","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","three/examples/jsm/controls/PointerLockControls.js":"iJuTM","url:./../assets/bucket.png":"i5DLN","url:./../assets/bucket.obj":"iEFFP","url:./../assets/skyscrapper.png":"359Mx","url:./../assets/skyscrapper.obj":"aqtml","url:./../assets/rope.png":"aR3Rp","url:./../assets/wheel.obj":"1tDJU","url:./../assets/planks.png":"loBs6","url:./../assets/planks.obj":"6EYq0","@mediapipe/hands":"lwRQS","@mediapipe/camera_utils":"dKcPV","three/examples/jsm/webxr/VRButton.js":"7zG2v"}],"dsoTF":[function(require,module,exports,__globalThis) {
 /**
  * @license
  * Copyright 2010-2025 Three.js Authors
@@ -54367,7 +54371,165 @@ function ParserState() {
     }
 }
 
-},{"three":"dsoTF","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"i5DLN":[function(require,module,exports,__globalThis) {
+},{"three":"dsoTF","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"7zG2v":[function(require,module,exports,__globalThis) {
+/**
+ * A utility class for creating a button that allows to initiate
+ * immersive VR sessions based on WebXR. The button can be created
+ * with a factory method and then appended ot the website's DOM.
+ *
+ * ```js
+ * document.body.appendChild( VRButton.createButton( renderer ) );
+ * ```
+ *
+ * @hideconstructor
+ * @three_import import { VRButton } from 'three/addons/webxr/VRButton.js';
+ */ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "VRButton", ()=>VRButton);
+class VRButton {
+    /**
+	 * Constructs a new VR button.
+	 *
+	 * @param {WebGLRenderer|WebGPURenderer} renderer - The renderer.
+	 * @param {XRSessionInit} [sessionInit] - The a configuration object for the AR session.
+	 * @return {HTMLElement} The button or an error message if `immersive-ar` isn't supported.
+	 */ static createButton(renderer, sessionInit = {}) {
+        const button = document.createElement('button');
+        function showEnterVR() {
+            let currentSession = null;
+            async function onSessionStarted(session) {
+                session.addEventListener('end', onSessionEnded);
+                await renderer.xr.setSession(session);
+                button.textContent = 'EXIT VR';
+                currentSession = session;
+            }
+            function onSessionEnded() {
+                currentSession.removeEventListener('end', onSessionEnded);
+                button.textContent = 'ENTER VR';
+                currentSession = null;
+            }
+            //
+            button.style.display = '';
+            button.style.cursor = 'pointer';
+            button.style.left = 'calc(50% - 50px)';
+            button.style.width = '100px';
+            button.textContent = 'ENTER VR';
+            // WebXR's requestReferenceSpace only works if the corresponding feature
+            // was requested at session creation time. For simplicity, just ask for
+            // the interesting ones as optional features, but be aware that the
+            // requestReferenceSpace call will fail if it turns out to be unavailable.
+            // ('local' is always available for immersive sessions and doesn't need to
+            // be requested separately.)
+            const sessionOptions = {
+                ...sessionInit,
+                optionalFeatures: [
+                    'local-floor',
+                    'bounded-floor',
+                    'layers',
+                    ...sessionInit.optionalFeatures || []
+                ]
+            };
+            button.onmouseenter = function() {
+                button.style.opacity = '1.0';
+            };
+            button.onmouseleave = function() {
+                button.style.opacity = '0.5';
+            };
+            button.onclick = function() {
+                if (currentSession === null) navigator.xr.requestSession('immersive-vr', sessionOptions).then(onSessionStarted);
+                else {
+                    currentSession.end();
+                    if (navigator.xr.offerSession !== undefined) navigator.xr.offerSession('immersive-vr', sessionOptions).then(onSessionStarted).catch((err)=>{
+                        console.warn(err);
+                    });
+                }
+            };
+            if (navigator.xr.offerSession !== undefined) navigator.xr.offerSession('immersive-vr', sessionOptions).then(onSessionStarted).catch((err)=>{
+                console.warn(err);
+            });
+        }
+        function disableButton() {
+            button.style.display = '';
+            button.style.cursor = 'auto';
+            button.style.left = 'calc(50% - 75px)';
+            button.style.width = '150px';
+            button.onmouseenter = null;
+            button.onmouseleave = null;
+            button.onclick = null;
+        }
+        function showWebXRNotFound() {
+            disableButton();
+            button.textContent = 'VR NOT SUPPORTED';
+        }
+        function showVRNotAllowed(exception) {
+            disableButton();
+            console.warn('Exception when trying to call xr.isSessionSupported', exception);
+            button.textContent = 'VR NOT ALLOWED';
+        }
+        function stylizeElement(element) {
+            element.style.position = 'absolute';
+            element.style.bottom = '20px';
+            element.style.padding = '12px 6px';
+            element.style.border = '1px solid #fff';
+            element.style.borderRadius = '4px';
+            element.style.background = 'rgba(0,0,0,0.1)';
+            element.style.color = '#fff';
+            element.style.font = 'normal 13px sans-serif';
+            element.style.textAlign = 'center';
+            element.style.opacity = '0.5';
+            element.style.outline = 'none';
+            element.style.zIndex = '999';
+        }
+        if ('xr' in navigator) {
+            button.id = 'VRButton';
+            button.style.display = 'none';
+            stylizeElement(button);
+            navigator.xr.isSessionSupported('immersive-vr').then(function(supported) {
+                supported ? showEnterVR() : showWebXRNotFound();
+                if (supported && VRButton.xrSessionIsGranted) button.click();
+            }).catch(showVRNotAllowed);
+            return button;
+        } else {
+            const message = document.createElement('a');
+            if (window.isSecureContext === false) {
+                message.href = document.location.href.replace(/^http:/, 'https:');
+                message.innerHTML = 'WEBXR NEEDS HTTPS'; // TODO Improve message
+            } else {
+                message.href = 'https://immersiveweb.dev/';
+                message.innerHTML = 'WEBXR NOT AVAILABLE';
+            }
+            message.style.left = 'calc(50% - 90px)';
+            message.style.width = '180px';
+            message.style.textDecoration = 'none';
+            stylizeElement(message);
+            return message;
+        }
+    }
+    /**
+	 * Registers a `sessiongranted` event listener. When a session is granted, the {@link VRButton#xrSessionIsGranted}
+	 * flag will evaluate to `true`. This method is automatically called by the module itself so there
+	 * should be no need to use it on app level.
+	 */ static registerSessionGrantedListener() {
+        if (typeof navigator !== 'undefined' && 'xr' in navigator) {
+            // WebXRViewer (based on Firefox) has a bug where addEventListener
+            // throws a silent exception and aborts execution entirely.
+            if (/WebXRViewer\//i.test(navigator.userAgent)) return;
+            navigator.xr.addEventListener('sessiongranted', ()=>{
+                VRButton.xrSessionIsGranted = true;
+            });
+        }
+    }
+}
+/**
+ * Whether a XR session has been granted or not.
+ *
+ * @static
+ * @type {boolean}
+ * @default false
+ */ VRButton.xrSessionIsGranted = false;
+VRButton.registerSessionGrantedListener();
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"i5DLN":[function(require,module,exports,__globalThis) {
 module.exports = module.bundle.resolve("bucket.4f8b3fcd.png") + "?" + Date.now();
 
 },{}],"iEFFP":[function(require,module,exports,__globalThis) {
