@@ -2,10 +2,6 @@
   "name": "webxr-workspace",
   "version": "1.0.0",
   "private": true,
-  "scripts": {
-    "dev": "parcel src/index.html",
-    "build": "parcel build src/index.html --dist-dir docs --public-url ./"
-  },
   "dependencies": {
     "three": "^0.160.0",
     "@mediapipe/hands": "^0.4.1675466862",
