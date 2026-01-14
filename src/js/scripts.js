@@ -109,11 +109,32 @@ hands.setOptions({
 	minTrackingConfidence: 0.5
 });
 
+<<<<<<< HEAD
 hands.onResults(results => {
 	handVisible = !!(
 		results.multiHandLandmarks &&
 		results.multiHandLandmarks.length > 0
 	);
+=======
+hands.onResults((results) => {
+	if (!results.multiHandLandmarks.length) return;
+
+	const landmarks = results.multiHandLandmarks[0];
+	const gesture = detectThumbGestureLandscape(landmarks);
+
+	if (gesture === "thumbs_up") {
+		thumbs_up = true;
+		thumbs_down = false;
+	}
+	else if (gesture === "thumbs_down") {
+		thumbs_down = true;
+		thumbs_up = false;
+	}
+	else {
+		thumbs_down = false;
+		thumbs_up = false;
+	}
+>>>>>>> 82d9250 (new test)
 });
 
 const cameraFeed = new Camera(video, {
