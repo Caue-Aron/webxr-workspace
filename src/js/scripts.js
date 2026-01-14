@@ -50,6 +50,53 @@ video.style.opacity = '0.9';
 
 document.body.appendChild(video);
 
+let thumbs_up = false;
+let thumbs_down = false;
+
+function distance(a, b) {
+	const dx = a.x - b.x;
+	const dy = a.y - b.y;
+	const dz = a.z - b.z;
+	return Math.sqrt(dx*dx + dy*dy + dz*dz);
+}
+
+function detectThumbGestureLandscape(landmarks) {
+	const wrist = landmarks[0];
+	const thumbTip = landmarks[4];
+	const thumbMCP = landmarks[2];
+
+	const indexTip = landmarks[8];
+	const middleTip = landmarks[12];
+	const ringTip = landmarks[16];
+	const pinkyTip = landmarks[20];
+
+	// 1. Polegar estendido
+	const thumbExtended =
+		distance(thumbTip, thumbMCP) > 0.05;
+
+	// 2. Outros dedos recolhidos
+	const fingersFolded =
+		distance(indexTip, wrist) < 0.1 &&
+		distance(middleTip, wrist) < 0.1 &&
+		distance(ringTip, wrist) < 0.1 &&
+		distance(pinkyTip, wrist) < 0.1;
+
+	if (!thumbExtended || !fingersFolded) {
+		return "none";
+	}
+
+	// 3. Direção em landscape (eixo X)
+	if (thumbTip.x > wrist.x) {
+		return "thumbs_up";
+	}
+
+	if (thumbTip.x < wrist.x) {
+		return "thumbs_down";
+	}
+
+	return "none";
+}
+
 const hands = new Hands({
 	locateFile: file =>
 		`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
