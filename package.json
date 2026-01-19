@@ -1,16 +1,30 @@
 {
-  "name": "webxr-workspace",
+  "name": "three",
   "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "three": "^0.160.0",
-    "@mediapipe/hands": "^0.4.1675466862",
-    "@mediapipe/camera_utils": "^0.3.1675466862"
-  },
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "build": "parcel build index.html --public-url ./"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Caue-Aron/webxr-workspace.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Caue-Aron/webxr-workspace/issues"
+  },
+  "homepage": "https://github.com/Caue-Aron/webxr-workspace#readme",
+  "dependencies": {
+    "three": "^0.182.0"
   },
   "devDependencies": {
-    "parcel": "^2.12.0"
+    "@types/three": "^0.182.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
   }
 }
