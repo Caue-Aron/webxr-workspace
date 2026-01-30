@@ -25,15 +25,17 @@ let handVisible = false;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.shadowMap.enabled = false;
-renderer.setPixelRatio(1);
+renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
+
 renderer.xr.addEventListener('sessionend', () => {
 	console.log('XR session ended, cleaning up');
 
 	renderer.setAnimationLoop(null);
 	renderer.dispose();
 });
+
 document.body.appendChild(VRButton.createButton(renderer));
 
 const bkgColor = 0xD0E8F8;
@@ -399,7 +401,7 @@ function handleAndaimeRotation() {
 renderer.setAnimationLoop((t, frame) => {
 	if (t - lastFrame < 1000 / 60) return;
 	lastFrame = t;
-	updateRaycast();
+	// updateRaycast();
 	handleAndaimeRotation();
 	renderer.render(scene, camera);
 });
