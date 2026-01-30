@@ -25,11 +25,6 @@ let handVisible = false;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.shadowMap.enabled = false;
-renderer.setAnimationLoop((t, frame) => {
-	if (t - lastFrame < 1000 / 60) return;
-	lastFrame = t;
-	renderer.render(scene, camera);
-});
 renderer.setPixelRatio(1);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
@@ -401,7 +396,9 @@ function handleAndaimeRotation() {
 	thumbs_up = false;
 }
 
-renderer.setAnimationLoop(() => {
+renderer.setAnimationLoop((t, frame) => {
+	if (t - lastFrame < 1000 / 60) return;
+	lastFrame = t;
 	updateRaycast();
 	handleAndaimeRotation();
 	renderer.render(scene, camera);
