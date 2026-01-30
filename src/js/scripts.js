@@ -56,13 +56,6 @@ document.body.appendChild(video);
 let thumbs_up = false;
 let thumbs_down = false;
 
-function distance(a, b) {
-	const dx = a.x - b.x;
-	const dy = a.y - b.y;
-	const dz = a.z - b.z;
-	return Math.sqrt(dx*dx + dy*dy + dz*dz);
-}
-
 function detectThumbGestureLandscape(landmarks) {
 	const wrist = landmarks[0];
 	const thumbTip = landmarks[4];
@@ -396,7 +389,7 @@ function handleAndaimeRotation() {
 }
 
 renderer.setAnimationLoop(() => {
-	updateRaycast();
+	// updateRaycast();
 	handleAndaimeRotation();
 	renderer.render(scene, camera);
 });
